@@ -52,7 +52,7 @@ func init() {
 }
 
 func setJSONFormat() {
-	timeFormat = time.RFC3339Nano
+	timeFormat = time.RFC3339
 	prefixFormat = `{"time":%q, "lvl":%q`
 	fieldFormat = ",%q:%q"
 	errorFormat = ",%q:%s"

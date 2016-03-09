@@ -45,16 +45,27 @@ func compareError(o1, o2 interface{}) (bool, error) {
 }
 
 func testFormatJSON(t *testing.T, l *Logger, ll logLine, msgWanted string) {
-	var obj map[string]interface{}
-	var buffer bytes.Buffer
+	var (
+		obj    map[string]interface{}
+		buffer bytes.Buffer
+		err    error
+	)
 
 	start := time.Now()
+	start, err = time.Parse(timeFormat, start.Format(timeFormat))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	l.format(&buffer, ll)
 	res := buffer.Bytes()
 	end := time.Now()
+	end, err = time.Parse(timeFormat, end.Format(timeFormat))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	err := json.Unmarshal(res, &obj)
+	err = json.Unmarshal(res, &obj)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +74,7 @@ func testFormatJSON(t *testing.T, l *Logger, ll logLine, msgWanted string) {
 	if err != nil {
 		t.Error(err)
 	}
-	timeStamp, err := time.Parse(time.RFC3339Nano, timeStr)
+	timeStamp, err := time.Parse(timeFormat, timeStr)
 	if err != nil {
 		t.Error(err)
 	}
