@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,6 +16,7 @@ type Logger struct {
 	contextFunc atomic.Value
 	context     atomic.Value
 	level       int32
+	flags       int32
 	writer      io.Writer
 	mu          sync.Mutex
 }
@@ -51,10 +53,30 @@ func (l *Logger) SetWriter(w io.Writer) {
 	l.mu.Unlock()
 }
 
+func (l *Logger) SetFlags(flags int32) {
+	l.mu.Lock()
+	l.flags = l.flags | flags
+	l.mu.Unlock()
+}
+
 func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
 	var dynamicContext C
 	now := time.Now()
-	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level])
+
+	flagsFormat := getBuffer()
+	if l.flags != 0 {
+		fileNo, funcName := getStackInfo()
+
+		if l.flags&(Llongfile|Lshortfile) != 0 {
+			fmt.Fprintf(flagsFormat, fieldFormat, "file", fileNo)
+		}
+
+		if l.flags&Lmethod != 0 {
+			fmt.Fprintf(flagsFormat, fieldFormat, "func", funcName)
+		}
+	}
+
+	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level], flagsFormat)
 
 	if lline.err != nil {
 		errMsg := formatError(lline.err)
@@ -148,4 +170,13 @@ func (l *Logger) Info(message string) {
 func (l *Logger) ErrorE(err error, context C, message string, params ...interface{}) {
 
 	l.LogC(logLine{err: err, level: ErrorLevel, localCx: context, message: message, params: params})
+}
+
+func getStackInfo() (fileNo string, functionName string) {
+	pc := make([]uintptr, 10) // at least 1 entry needed
+	runtime.Callers(3, pc)
+	f := runtime.FuncForPC(pc[0])
+	file, line := f.FileLine(pc[0])
+	fileNo = fmt.Sprintf("%s.%d", file, line)
+	return fileNo, f.Name()
 }

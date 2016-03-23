@@ -42,6 +42,12 @@ var (
 	postfixFormat string
 )
 
+const (
+	Lshortfile = 1 << iota
+	Llongfile
+	Lmethod
+)
+
 func init() {
 	format := os.Getenv("LOGOPS_FORMAT")
 	if strings.ToLower(format) == "dev" {
@@ -53,7 +59,7 @@ func init() {
 
 func setJSONFormat() {
 	timeFormat = time.RFC3339
-	prefixFormat = `{"time":%q, "lvl":%q`
+	prefixFormat = `{"time":%q, "lvl":%q%s` // time, level and flags (optional)
 	fieldFormat = ",%q:%q"
 	errorFormat = ",%q:%s"
 	postfixFormat = `,"msg":%q}`
@@ -62,10 +68,10 @@ func setJSONFormat() {
 
 func setTextFormat() {
 	timeFormat = "15:04:05.000"
-	prefixFormat = "%s %s\t" // time and level
-	fieldFormat = " [%s=%s]" // key and value
-	errorFormat = " [%s=%s]" // key and value
-	postfixFormat = " %s"    // message
+	prefixFormat = "%s %s%s\t" // time, level and flags (optional)
+	fieldFormat = " [%s=%s]"   // key and value
+	errorFormat = " [%s=%s]"   // key and value
+	postfixFormat = " %s"      // message
 }
 
 var bufferPool = sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
