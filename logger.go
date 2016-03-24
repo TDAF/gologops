@@ -7,12 +7,13 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-const callerDeepLevel int = 5
+const callerDeepLevel int = 6
 
 type Logger struct {
 	contextFunc atomic.Value
@@ -65,20 +66,12 @@ func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
 	var dynamicContext C
 	now := time.Now()
 
-	flagsFormat := getBuffer()
-	if l.flags != 0 {
-		fileNo, funcName := getStackInfo()
-
-		if l.flags&(Llongfile|Lshortfile) != 0 {
-			fmt.Fprintf(flagsFormat, fieldFormat, "file", fileNo)
-		}
-
-		if l.flags&Lmethod != 0 {
-			fmt.Fprintf(flagsFormat, fieldFormat, "func", funcName)
-		}
+	var flagsFields string
+	if l.flags&(Llongfile|Lshortfile|Lmethod) != 0 {
+		flagsFields = flagsInfo(l.flags)
 	}
 
-	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level], flagsFormat)
+	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level], flagsFields)
 
 	if lline.err != nil {
 		errMsg := formatError(lline.err)
@@ -174,7 +167,27 @@ func (l *Logger) ErrorE(err error, context C, message string, params ...interfac
 	l.LogC(logLine{err: err, level: ErrorLevel, localCx: context, message: message, params: params})
 }
 
-func getStackInfo() (fileNo string, functionName string) {
+func flagsInfo(flags int32) string {
+	b := getBuffer()
+	defer putBuffer(b)
+
+	fileNo, funcName := stackInfo()
+
+	if flags&(Llongfile|Lshortfile) != 0 {
+		if flags&Lshortfile != 0 {
+			id := strings.LastIndex(fileNo, "/")
+			fileNo = fileNo[id+1:]
+		}
+		fmt.Fprintf(b, fileNoFlagFormat, fileNo)
+	}
+
+	if flags&Lmethod != 0 {
+		fmt.Fprintf(b, funcFlagFormat, funcName)
+	}
+	return b.String()
+}
+
+func stackInfo() (fileNo string, functionName string) {
 	pc := make([]uintptr, 10) // at least 1 entry needed
 	runtime.Callers(callerDeepLevel, pc)
 	f := runtime.FuncForPC(pc[0])

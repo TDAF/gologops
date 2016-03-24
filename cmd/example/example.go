@@ -25,6 +25,7 @@ func main() {
 	l := gologops.NewLogger()
 	l.SetFlags(gologops.Lmethod)
 	l.SetFlags(gologops.Llongfile)
+	l.SetFlags(gologops.Lshortfile)
 
 	l.Infof("%d y %d son %d", 2, 2, 4)
 	l.Info("y ocho dieciséis")
