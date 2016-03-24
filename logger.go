@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const callerDeepLevel int = 5
+
 type Logger struct {
 	contextFunc atomic.Value
 	context     atomic.Value
@@ -174,7 +176,7 @@ func (l *Logger) ErrorE(err error, context C, message string, params ...interfac
 
 func getStackInfo() (fileNo string, functionName string) {
 	pc := make([]uintptr, 10) // at least 1 entry needed
-	runtime.Callers(3, pc)
+	runtime.Callers(callerDeepLevel, pc)
 	f := runtime.FuncForPC(pc[0])
 	file, line := f.FileLine(pc[0])
 	fileNo = fmt.Sprintf("%s.%d", file, line)
