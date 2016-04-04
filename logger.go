@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// 6 = External Function + InfoC | Warn | Error... + logC + format + flagsInfo + stackInfo
 const callerDeepLevel int = 6
 
 type Logger struct {

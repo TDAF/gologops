@@ -41,6 +41,8 @@ func main() {
 	fmt.Println()
 
 	fmt.Println("Con funciones del paquete")
+	gologops.SetFlags(gologops.Lmethod)
+	gologops.SetFlags(gologops.Lshortfile)
 	gologops.Infof("%d y %d son %d", 2, 2, 4)
 	gologops.Info("y ocho dieciséis")
 	gologops.SetContext(gologops.C{"prefix": "prefijo"})

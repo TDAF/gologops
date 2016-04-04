@@ -45,8 +45,8 @@ var (
 )
 
 const (
-	Lshortfile = 1 << iota
-	Llongfile
+	Llongfile = 1 << iota
+	Lshortfile
 	Lmethod
 )
 

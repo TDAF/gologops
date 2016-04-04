@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -155,6 +157,21 @@ func testFormatJSON(t *testing.T, l *Logger, ll logLine, msgWanted string) {
 			t.Errorf("value for field %s: wanted %s, got %s", ErrFieldName, ll.err, errObj)
 		}
 	}
+
+	if l.flags&(Llongfile|Lshortfile|Lmethod) != 0 {
+		if l.flags&Lmethod != 0 {
+			_, ok := obj["func"]
+			if !ok {
+				t.Error("The func name should have been written")
+			}
+		}
+		if l.flags&(Llongfile|Lshortfile) != 0 {
+			_, ok := obj["file"]
+			if !ok {
+				t.Error("The file name and line number should have been written")
+			}
+		}
+	}
 }
 
 func TestSimpleMessageJSON(t *testing.T) {
@@ -263,4 +280,89 @@ func TestInfo(t *testing.T) {
 
 func TestInfoC(t *testing.T) {
 	testLevelC(t, InfoLevel, (*Logger).InfoC)
+}
+
+func TestLoggerFlagsActivation(t *testing.T) {
+	l := NewLogger()
+
+	flagsSet := []int32{Llongfile, Lshortfile, Lmethod}
+
+	for _, flag := range flagsSet {
+
+		l.SetFlags(int32(flag))
+		switch {
+		case flag == Llongfile:
+			if l.flags&Llongfile == 0 {
+				t.Error("Expected Llongfile flag activated, but it isn't")
+			}
+		case flag == Lshortfile:
+			if l.flags&Lshortfile == 0 || l.flags&Llongfile == 0 {
+				t.Error("Expected Llongfile and Lshortfile flag activated, but it isn't")
+			}
+		case flag == Lmethod:
+			if l.flags&Lshortfile == 0 || l.flags&Llongfile == 0 || l.flags&Lmethod == 0 {
+				t.Error("Expected Lshortfile, Llongfile & Lmethod flag activated, but it isn't")
+			}
+		}
+
+		for lvlWanted := allLevel; lvlWanted < noneLevel; lvlWanted++ {
+			for _, msgWanted := range stringsForTesting {
+				testFormatJSON(t, l,
+					logLine{localCx: contextForTesting, level: lvlWanted, message: msgWanted},
+					msgWanted)
+			}
+		}
+	}
+}
+
+func testLoggerFlags(t *testing.T, flag int32) {
+	var obj map[string]string
+
+	var buffer bytes.Buffer
+	l := NewLoggerWithWriter(&buffer)
+	l.SetFlags(int32(flag))
+
+	var directory string
+	if flag&Llongfile != 0 {
+		_, filename, _, _ := runtime.Caller(0)
+		directory = path.Dir(filename)
+	}
+	for lvlWanted := allLevel; lvlWanted < noneLevel; lvlWanted++ {
+		for _, message := range stringsForTesting {
+			l.SetLevel(lvlWanted)
+			l.Info(message)
+			res := buffer.Bytes()
+			err := json.Unmarshal(res, &obj)
+			if err == nil {
+				if flag&Lmethod != 0 {
+					if obj["func"] != "github.com/TDAF/gologops.testLoggerFlags" {
+						t.Errorf("Expecting \"func\": \"github.com/TDAF/gologops.testLoggerFlags\" but get %q instead", obj["func"])
+					}
+				}
+
+				if flag&Lshortfile != 0 {
+					lastPointID := strings.LastIndex(obj["file"], ".")
+					fileName := obj["file"][:lastPointID]
+					if fileName != "logops_test.go" {
+						t.Errorf("Expecting \"logops_test.go\" but get %q instead", obj["file"])
+					}
+				}
+				if flag&Llongfile != 0 {
+					lastPointID := strings.LastIndex(obj["file"], ".")
+					fileName := obj["file"][:lastPointID]
+					if fileName != path.Join(directory, "logops_test.go") {
+						t.Errorf("Expecting \"%q\" but get %q instead", path.Join(directory, "logops_test.go"), obj["file"])
+					}
+				}
+			}
+		}
+	}
+
+}
+
+func TestLoggerFlags(t *testing.T) {
+
+	testLoggerFlags(t, Lshortfile)
+	testLoggerFlags(t, Llongfile)
+	testLoggerFlags(t, Lmethod)
 }
