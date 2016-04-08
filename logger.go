@@ -34,6 +34,7 @@ func NewLoggerWithWriter(w io.Writer) *Logger {
 	l.SetContextFunc(nil)
 	l.SetContext(nil)
 	l.SetLevel(allLevel)
+	l.SetFlags(Ldefaults)
 	l.writer = w
 	return l
 }
@@ -58,9 +59,11 @@ func (l *Logger) SetWriter(w io.Writer) {
 }
 
 func (l *Logger) SetFlags(flags int32) {
-	l.mu.Lock()
-	l.flags = l.flags | flags
-	l.mu.Unlock()
+	atomic.StoreInt32(&l.flags, flags)
+}
+
+func (l *Logger) AddFlags(flags int32) {
+	atomic.StoreInt32(&l.flags, atomic.LoadInt32(&l.flags)|flags)
 }
 
 func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
@@ -68,7 +71,7 @@ func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
 	now := time.Now()
 
 	var flagsFields string
-	if l.flags&(Llongfile|Lshortfile|Lmethod) != 0 {
+	if atomic.LoadInt32(&l.flags)&(Llongfile|Lshortfile|Lmethod) != 0 {
 		flagsFields = flagsInfo(l.flags)
 	}
 

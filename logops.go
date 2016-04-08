@@ -48,6 +48,7 @@ const (
 	Llongfile = 1 << iota
 	Lshortfile
 	Lmethod
+	Ldefaults = 0
 )
 
 func init() {

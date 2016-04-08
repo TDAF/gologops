@@ -282,14 +282,14 @@ func TestInfoC(t *testing.T) {
 	testLevelC(t, InfoLevel, (*Logger).InfoC)
 }
 
-func TestLoggerFlagsActivation(t *testing.T) {
+func TestLoggerAddFlags(t *testing.T) {
 	l := NewLogger()
 
-	flagsSet := []int32{Llongfile, Lshortfile, Lmethod}
+	flagsSet := []int32{Llongfile, Lshortfile, Lmethod, Ldefaults}
 
 	for _, flag := range flagsSet {
 
-		l.SetFlags(int32(flag))
+		l.AddFlags(int32(flag))
 		switch {
 		case flag == Llongfile:
 			if l.flags&Llongfile == 0 {
@@ -297,14 +297,55 @@ func TestLoggerFlagsActivation(t *testing.T) {
 			}
 		case flag == Lshortfile:
 			if l.flags&Lshortfile == 0 || l.flags&Llongfile == 0 {
-				t.Error("Expected Llongfile and Lshortfile flag activated, but it isn't")
+				t.Error("Expected Llongfile and Lshortfile flag activated, but it aren't")
 			}
 		case flag == Lmethod:
 			if l.flags&Lshortfile == 0 || l.flags&Llongfile == 0 || l.flags&Lmethod == 0 {
-				t.Error("Expected Lshortfile, Llongfile & Lmethod flag activated, but it isn't")
+				t.Error("Expected Lshortfile, Llongfile & Lmethod flag activated, but it aren't")
+			}
+		case flag == Ldefaults:
+			if l.flags&Lshortfile == 0 || l.flags&Llongfile == 0 || l.flags&Lmethod == 0 {
+				t.Error("Expected Lshortfile, Llongfile & Lmethod flag activated, but it aren't")
 			}
 		}
 
+		for lvlWanted := allLevel; lvlWanted < noneLevel; lvlWanted++ {
+			for _, msgWanted := range stringsForTesting {
+				testFormatJSON(t, l,
+					logLine{localCx: contextForTesting, level: lvlWanted, message: msgWanted},
+					msgWanted)
+			}
+		}
+	}
+}
+
+func TestLoggerSetFlags(t *testing.T) {
+	l := NewLogger()
+
+	flagsSet := []int32{Llongfile, Lshortfile, Lmethod, Ldefaults}
+
+	for _, flag := range flagsSet {
+
+		l.SetFlags(int32(flag))
+		switch {
+		case flag == Llongfile:
+			if l.flags != Llongfile {
+				t.Error("Expected flags activated = \"Llongfile\", but it isn't")
+			}
+		case flag == Lshortfile:
+			if l.flags != Lshortfile {
+				t.Error("Expected flags activated = \"Lshortfile\", but it isn't")
+			}
+		case flag == Lmethod:
+			if l.flags != Lmethod {
+				t.Error("Expected flags activated = \"Lmethod\", but it isn't")
+			}
+
+		case flag == Ldefaults:
+			if l.flags != Ldefaults {
+				t.Error("Expected flags activated = \"Ldefaults\", but it isn't")
+			}
+		}
 		for lvlWanted := allLevel; lvlWanted < noneLevel; lvlWanted++ {
 			for _, msgWanted := range stringsForTesting {
 				testFormatJSON(t, l,
@@ -320,7 +361,7 @@ func testLoggerFlags(t *testing.T, flag int32) {
 
 	var buffer bytes.Buffer
 	l := NewLoggerWithWriter(&buffer)
-	l.SetFlags(int32(flag))
+	l.AddFlags(int32(flag))
 
 	var directory string
 	if flag&Llongfile != 0 {
