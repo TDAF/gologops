@@ -6,15 +6,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+// 6 = External Function + InfoC | Warn | Error... + logC + format + flagsInfo + stackInfo
+const callerDeepLevel int = 6
+
 type Logger struct {
 	contextFunc atomic.Value
 	context     atomic.Value
 	level       int32
+	flags       int32
 	writer      io.Writer
 	mu          sync.Mutex
 }
@@ -28,6 +34,7 @@ func NewLoggerWithWriter(w io.Writer) *Logger {
 	l.SetContextFunc(nil)
 	l.SetContext(nil)
 	l.SetLevel(allLevel)
+	l.SetFlags(Ldefaults)
 	l.writer = w
 	return l
 }
@@ -51,10 +58,24 @@ func (l *Logger) SetWriter(w io.Writer) {
 	l.mu.Unlock()
 }
 
+func (l *Logger) SetFlags(flags int32) {
+	atomic.StoreInt32(&l.flags, flags)
+}
+
+func (l *Logger) AddFlags(flags int32) {
+	atomic.StoreInt32(&l.flags, atomic.LoadInt32(&l.flags)|flags)
+}
+
 func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
 	var dynamicContext C
 	now := time.Now()
-	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level])
+
+	var flagsFields string
+	if f := atomic.LoadInt32(&l.flags); f&(Llongfile|Lshortfile|Lmethod) != 0 {
+		flagsFields = flagsInfo(f)
+	}
+
+	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level], flagsFields)
 
 	if lline.err != nil {
 		errMsg := formatError(lline.err)
@@ -148,4 +169,33 @@ func (l *Logger) Info(message string) {
 func (l *Logger) ErrorE(err error, context C, message string, params ...interface{}) {
 
 	l.LogC(logLine{err: err, level: ErrorLevel, localCx: context, message: message, params: params})
+}
+
+func flagsInfo(flags int32) string {
+	b := getBuffer()
+	defer putBuffer(b)
+
+	fileNo, funcName := stackInfo()
+
+	if flags&(Llongfile|Lshortfile) != 0 {
+		if flags&Lshortfile != 0 {
+			id := strings.LastIndex(fileNo, "/")
+			fileNo = fileNo[id+1:]
+		}
+		fmt.Fprintf(b, fileNoFlagFormat, fileNo)
+	}
+
+	if flags&Lmethod != 0 {
+		fmt.Fprintf(b, funcFlagFormat, funcName)
+	}
+	return b.String()
+}
+
+func stackInfo() (fileNo string, functionName string) {
+	pc := make([]uintptr, 10) // at least 1 entry needed
+	runtime.Callers(callerDeepLevel, pc)
+	f := runtime.FuncForPC(pc[0])
+	file, line := f.FileLine(pc[0])
+	fileNo = fmt.Sprintf("%s.%d", file, line)
+	return fileNo, f.Name()
 }

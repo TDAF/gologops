@@ -32,3 +32,7 @@ func SetContextFunc(f func() C) {
 func SetWriter(w io.Writer) {
 	defaultLogger.SetWriter(w)
 }
+
+func SetFlags(flags int32) {
+	defaultLogger.SetFlags(flags)
+}

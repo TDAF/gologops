@@ -23,6 +23,9 @@ func (NotJSONableNError) MarshalJSON() ([]byte, error) {
 
 func main() {
 	l := gologops.NewLogger()
+	l.AddFlags(gologops.Lmethod)
+	l.AddFlags(gologops.Llongfile)
+	l.AddFlags(gologops.Lshortfile)
 
 	l.Infof("%d y %d son %d", 2, 2, 4)
 	l.Info("y ocho dieciséis")
@@ -38,6 +41,8 @@ func main() {
 	fmt.Println()
 
 	fmt.Println("Con funciones del paquete")
+	gologops.SetFlags(gologops.Lmethod)
+	gologops.SetFlags(gologops.Lshortfile)
 	gologops.Infof("%d y %d son %d", 2, 2, 4)
 	gologops.Info("y ocho dieciséis")
 	gologops.SetContext(gologops.C{"prefix": "prefijo"})

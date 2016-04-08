@@ -35,11 +35,20 @@ var levelNames = [...]string{
 const ErrFieldName = "err"
 
 var (
-	timeFormat    string
-	prefixFormat  string
-	fieldFormat   string
-	errorFormat   string
-	postfixFormat string
+	timeFormat       string
+	prefixFormat     string
+	fieldFormat      string
+	errorFormat      string
+	postfixFormat    string
+	fileNoFlagFormat string
+	funcFlagFormat   string
+)
+
+const (
+	Llongfile = 1 << iota
+	Lshortfile
+	Lmethod
+	Ldefaults = 0
 )
 
 func init() {
@@ -53,16 +62,20 @@ func init() {
 
 func setJSONFormat() {
 	timeFormat = time.RFC3339
-	prefixFormat = `{"time":%q, "lvl":%q`
-	fieldFormat = ",%q:%q"
-	errorFormat = ",%q:%s"
-	postfixFormat = `,"msg":%q}`
+	prefixFormat = `{"time":%q, "lvl":%q%s` // time, level and flags (optional)
+	fileNoFlagFormat = `, "file":%q`
+	funcFlagFormat = `, "func":%q`
+	fieldFormat = ", %q:%q"
+	errorFormat = ", %q:%s"
+	postfixFormat = `, "msg":%q}`
 
 }
 
 func setTextFormat() {
 	timeFormat = "15:04:05.000"
-	prefixFormat = "%s %s\t" // time and level
+	prefixFormat = "%s %s%s\t" // time, level and flags (optional)
+	fileNoFlagFormat = " %s"
+	funcFlagFormat = " %s"
 	fieldFormat = " [%s=%s]" // key and value
 	errorFormat = " [%s=%s]" // key and value
 	postfixFormat = " %s"    // message
