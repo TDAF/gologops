@@ -71,8 +71,8 @@ func (l *Logger) format(buffer *bytes.Buffer, lline logLine) {
 	now := time.Now()
 
 	var flagsFields string
-	if atomic.LoadInt32(&l.flags)&(Llongfile|Lshortfile|Lmethod) != 0 {
-		flagsFields = flagsInfo(l.flags)
+	if f := atomic.LoadInt32(&l.flags); f&(Llongfile|Lshortfile|Lmethod) != 0 {
+		flagsFields = flagsInfo(f)
 	}
 
 	fmt.Fprintf(buffer, prefixFormat, now.Format(timeFormat), levelNames[lline.level], flagsFields)
