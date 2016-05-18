@@ -372,6 +372,7 @@ func testLoggerFlags(t *testing.T, flag int32) {
 		for _, message := range stringsForTesting {
 			l.SetLevel(lvlWanted)
 			l.Info(message)
+			t.Log(buffer.String())
 			res := buffer.Bytes()
 			err := json.Unmarshal(res, &obj)
 			if err == nil {

@@ -154,6 +154,20 @@ func (l *Logger) LogC(ll logLine) error {
 	return nil
 }
 
+//DebugC prints the logger. Arguments are handled in the manner of fmt.Printf.
+
+func (l *Logger) DebugC(context C, format string, params ...interface{}) {
+	l.LogC(logLine{level: DebugLevel, localCx: context, message: format, params: params})
+}
+
+func (l *Logger) Debugf(message string, params ...interface{}) {
+	l.LogC(logLine{level: DebugLevel, message: message, params: params})
+}
+
+func (l *Logger) Debug(message string) {
+	l.LogC(logLine{level: DebugLevel, message: message})
+}
+
 func (l *Logger) InfoC(context C, message string, params ...interface{}) {
 	l.LogC(logLine{level: InfoLevel, localCx: context, message: message, params: params})
 }
@@ -166,9 +180,50 @@ func (l *Logger) Info(message string) {
 	l.LogC(logLine{level: InfoLevel, message: message})
 }
 
+func (l *Logger) WarnC(context C, message string, params ...interface{}) {
+	l.LogC(logLine{level: WarnLevel, localCx: context, message: message, params: params})
+}
+
+func (l *Logger) Warnf(message string, params ...interface{}) {
+	l.LogC(logLine{level: WarnLevel, message: message, params: params})
+}
+
+func (l *Logger) Warn(message string) {
+	l.LogC(logLine{level: WarnLevel, message: message})
+}
+
 func (l *Logger) ErrorE(err error, context C, message string, params ...interface{}) {
 
 	l.LogC(logLine{err: err, level: ErrorLevel, localCx: context, message: message, params: params})
+}
+
+func (l *Logger) ErrorC(context C, message string, params ...interface{}) {
+	l.LogC(logLine{level: ErrorLevel, localCx: context, message: message, params: params})
+}
+
+func (l *Logger) Errorf(message string, params ...interface{}) {
+	l.LogC(logLine{level: ErrorLevel, message: message, params: params})
+}
+
+func (l *Logger) Error(message string) {
+	l.LogC(logLine{level: ErrorLevel, message: message})
+}
+
+func (l *Logger) FatalE(err error, context C, message string, params ...interface{}) {
+
+	l.LogC(logLine{err: err, level: CriticalLevel, localCx: context, message: message, params: params})
+}
+
+func (l *Logger) FatalC(context C, message string, params ...interface{}) {
+	l.LogC(logLine{level: CriticalLevel, localCx: context, message: message, params: params})
+}
+
+func (l *Logger) Fatalf(message string, params ...interface{}) {
+	l.LogC(logLine{level: CriticalLevel, message: message, params: params})
+}
+
+func (l *Logger) Fatal(message string) {
+	l.LogC(logLine{level: CriticalLevel, message: message})
 }
 
 func flagsInfo(flags int32) string {
