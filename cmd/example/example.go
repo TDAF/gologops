@@ -21,13 +21,6 @@ type procInfo struct {
 	pid      int32
 }
 
-func f() interface{} {
-	return procInfo{
-		hostname: "localhost",
-		pid:      3452354,
-	}
-}
-
 type NotJSONableNError struct{}
 
 func (NotJSONableNError) Error() string { return "a very strange error" }

@@ -242,6 +242,7 @@ func testLevelC(t *testing.T, levelMethod Level, method contextLogFunc) {
 		l.SetLevel(loggerLevel)
 		buffer.Reset()
 		method(l, ctx, "a not very long message")
+		t.Log(buffer.String())
 		if buffer.Len() == 0 {
 			t.Errorf("log not written for method %s when level %s", levelNames[levelMethod], levelNames[loggerLevel])
 		}
@@ -270,16 +271,46 @@ func testLevel(t *testing.T, levelMethod Level, method simpleLogFunction) {
 	})
 }
 
-func TestInfof(t *testing.T) {
-	testLevelf(t, InfoLevel, (*Logger).Infof)
+var levelSimpleFunc = map[Level]simpleLogFunction{
+	DebugLevel:    (*Logger).Debug,
+	InfoLevel:     (*Logger).Info,
+	WarnLevel:     (*Logger).Warn,
+	ErrorLevel:    (*Logger).Error,
+	CriticalLevel: (*Logger).Fatal,
 }
 
-func TestInfo(t *testing.T) {
-	testLevel(t, InfoLevel, (*Logger).Info)
+func TestLevelsSimpleFunction(t *testing.T) {
+	for level, funcName := range levelSimpleFunc {
+		testLevel(t, level, funcName)
+	}
 }
 
-func TestInfoC(t *testing.T) {
-	testLevelC(t, InfoLevel, (*Logger).InfoC)
+var levelFormatFunc = map[Level]formatLogFunc{
+	DebugLevel:    (*Logger).Debugf,
+	InfoLevel:     (*Logger).Infof,
+	WarnLevel:     (*Logger).Warnf,
+	ErrorLevel:    (*Logger).Errorf,
+	CriticalLevel: (*Logger).Fatalf,
+}
+
+func TestLevelsFormatFunction(t *testing.T) {
+	for level, funcName := range levelFormatFunc {
+		testLevelf(t, level, funcName)
+	}
+}
+
+var levelContextFunc = map[Level]contextLogFunc{
+	DebugLevel:    (*Logger).DebugC,
+	InfoLevel:     (*Logger).InfoC,
+	WarnLevel:     (*Logger).WarnC,
+	ErrorLevel:    (*Logger).ErrorC,
+	CriticalLevel: (*Logger).FatalC,
+}
+
+func TestLevelsContextFunction(t *testing.T) {
+	for level, funcName := range levelContextFunc {
+		testLevelC(t, level, funcName)
+	}
 }
 
 func TestLoggerAddFlags(t *testing.T) {
