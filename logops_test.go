@@ -234,14 +234,45 @@ func TestLoggerContext(t *testing.T) {
 
 func TestAllContexts(t *testing.T) { t.Skip("to be implemented") }
 
-func testLevelC(t *testing.T, levelMethod Level, method contextLogFunc) {
+// func testLevelC(t *testing.T, levelMethod Level, method contextLogFunc) {
+// 	var buffer bytes.Buffer
+// 	l := NewLoggerWithWriter(&buffer)
+// 	ctx := C{"trying": "something"}
+// 	for loggerLevel := allLevel; loggerLevel <= levelMethod; loggerLevel++ {
+// 		l.SetLevel(loggerLevel)
+// 		buffer.Reset()
+// 		method(l, ctx, "a not very long message")
+// 		t.Log(buffer.String())
+// 		if buffer.Len() == 0 {
+// 			t.Errorf("log not written for method %s when level %s", levelNames[levelMethod], levelNames[loggerLevel])
+// 		}
+// 	}
+// 	for loggerLevel := levelMethod + 1; loggerLevel < noneLevel; loggerLevel++ {
+// 		l.SetLevel(loggerLevel)
+// 		buffer.Reset()
+// 		method(l, ctx, "another short message")
+// 		if buffer.Len() > 0 {
+// 			t.Errorf("log written for method %s when level %s", levelNames[levelMethod], levelNames[loggerLevel])
+// 		}
+// 	}
+// }
+
+type complexErr struct {
+	Text  string
+	Cause *complexErr
+}
+
+func (ce complexErr) Error() string { return fmt.Sprintf("%+v\n", ce) }
+
+func testLevelE(t *testing.T, levelMethod Level, method errorLogFunction) {
 	var buffer bytes.Buffer
 	l := NewLoggerWithWriter(&buffer)
 	ctx := C{"trying": "something"}
+	err := complexErr{"The 1 is another err...", &complexErr{"that nests the number 2 err", nil}}
 	for loggerLevel := allLevel; loggerLevel <= levelMethod; loggerLevel++ {
 		l.SetLevel(loggerLevel)
 		buffer.Reset()
-		method(l, ctx, "a not very long message")
+		method(l, err, ctx, "a not very long message")
 		t.Log(buffer.String())
 		if buffer.Len() == 0 {
 			t.Errorf("log not written for method %s when level %s", levelNames[levelMethod], levelNames[loggerLevel])
@@ -250,11 +281,18 @@ func testLevelC(t *testing.T, levelMethod Level, method contextLogFunc) {
 	for loggerLevel := levelMethod + 1; loggerLevel < noneLevel; loggerLevel++ {
 		l.SetLevel(loggerLevel)
 		buffer.Reset()
-		method(l, ctx, "another short message")
+		method(l, err, ctx, "another short message")
 		if buffer.Len() > 0 {
 			t.Errorf("log written for method %s when level %s", levelNames[levelMethod], levelNames[loggerLevel])
 		}
 	}
+}
+
+func testLevelC(t *testing.T, levelMethod Level, method contextLogFunc) {
+	context := C{"context": "myContext"}
+	testLevelE(t, levelMethod, func(l *Logger, err error, ctx C, message string, params ...interface{}) {
+		method(l, context, message, params...)
+	})
 }
 
 func testLevelf(t *testing.T, levelMethod Level, method formatLogFunc) {
@@ -311,6 +349,11 @@ func TestLevelsContextFunction(t *testing.T) {
 	for level, funcName := range levelContextFunc {
 		testLevelC(t, level, funcName)
 	}
+}
+
+func TestLevelsErrorFunction(t *testing.T) {
+	testLevelE(t, ErrorLevel, (*Logger).ErrorE)
+	testLevelE(t, CriticalLevel, (*Logger).FatalE)
 }
 
 func TestLoggerAddFlags(t *testing.T) {
