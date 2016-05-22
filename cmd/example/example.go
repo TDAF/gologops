@@ -16,10 +16,6 @@ type complexErr struct {
 
 func (ce complexErr) Error() string { return "uno complejito" }
 
-type procInfo struct {
-	hostname string
-	pid      int32
-}
 
 type NotJSONableNError struct{}
 
