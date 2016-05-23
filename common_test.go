@@ -15,4 +15,5 @@ type (
 	contextLogFunc    func(l *Logger, context C, message string, params ...interface{})
 	formatLogFunc     func(l *Logger, message string, params ...interface{})
 	simpleLogFunction func(l *Logger, message string)
+	errorLogFunction  func(l *Logger, err error, context C, message string, params ...interface{})
 )
